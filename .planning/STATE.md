@@ -33,7 +33,7 @@
 **01-04:** ✅ Onboarding Flow - [SUMMARY](phases/01-foundation-data-safety/01-04-SUMMARY.md)  
 **01-05:** ✅ Folder Learning System - [SUMMARY](phases/01-foundation-data-safety/01-05-SUMMARY.md)  
 **01-06:** ✅ Trash System - [SUMMARY](phases/01-foundation-data-safety/01-06-SUMMARY.md)  
-**01-07:** ⏳ Additional Plans - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md)
+**01-07:** ✅ Main Screen & Settings - [SUMMARY](phases/01-foundation-data-safety/01-07-SUMMARY.md)
 
 ---
 
@@ -50,7 +50,7 @@
 4. ~~Onboarding Flow~~: Single-screen SAF onboarding with folder discovery ✅ **DONE**  
 5. ~~Folder Learning System~~: ML Kit label extraction and aggregation ✅ **DONE**  
 6. ~~Trash System~~: 7-day retention with scheduled cleanup ✅ **DONE**  
-7. **Category Management UI**: User-defined categories with target folder selection - *Next: 01-07*
+7. ~~Main Screen & Settings~~: Folder list, confidence threshold, recovery - ✅ **DONE**
 
 ### Blockers
 
@@ -80,6 +80,7 @@ None
 | 7-day retention period for trash | 01-06 | Matches desktop OS conventions for user safety |
 | Hidden .trash folder with .nomedia | 01-06 | Prevents gallery apps from showing deleted items |
 | KEEP policy for periodic work | 01-06 | Prevents duplicate work requests on multiple schedules |
+| Default confidence threshold 0.9 (High) | 01-07 | Conservative organization with fewer mistakes |
 
 ### Decisions Pending
 
@@ -150,5 +151,5 @@ Before transitioning to Phase 2, the following must be true:
 ---
 
 *Document updated: 2026-03-06*  
-*Last session: Completed 01-05-PLAN.md (12 min)*  
+*Last session: Completed 01-07-PLAN.md (45 min)*  
 *Update frequency: Daily during active development, weekly otherwise*
