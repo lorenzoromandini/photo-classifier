@@ -20,10 +20,20 @@
 
 | Phase | Name | Status | Requirements Complete | Success Criteria Met |
 |-------|------|--------|----------------------|---------------------|
-| 1 | Foundation & Data Safety | **IN PROGRESS** | 0/11 | 0/4 |
+| 1 | Foundation & Data Safety | **IN PROGRESS** | 1/11 | 0/4 |
 | 2 | Detection & Classification Pipeline | Blocked | 0/14 | 0/5 |
 | 3 | Notifications & Polish | Blocked | 0/7 | 0/4 |
 | 4 | Release Preparation | Blocked | 0/3 | 0/3 |
+
+### Current Plan Progress
+
+**01-01:** ✅ Room Database & Proto DataStore - [SUMMARY](phases/01-foundation-data-safety/01-01-SUMMARY.md)  
+**01-02:** ⏳ SAF DataSource & Repository - [PLAN](phases/01-foundation-data-safety/01-02-PLAN.md)  
+**01-03:** ⏳ Crash-Safe File Operations - [PLAN](phases/01-foundation-data-safety/01-03-PLAN.md)  
+**01-04:** ⏳ Settings Screen - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md)  
+**01-05:** ⏳ Category Management - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md)  
+**01-06:** ⏳ Onboarding Flow - [PLAN](phases/01-foundation-data-safety/01-06-PLAN.md)  
+**01-07:** ⏳ Trash Implementation - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md)
 
 ---
 
@@ -34,15 +44,26 @@
 
 ### Current Priorities
 
-1. **Database Schema**: Room entities for PhotoRecord, Category, and TransactionLog
-2. **Safe File Operations**: Copy-verify-delete pattern with transaction logging
-3. **Category Management UI**: User-defined categories with target folder selection
-4. **Onboarding Flow**: SAF permissions with clear UX explanation
-5. **Trash Implementation**: 7-day retention folder
+1. ~~Database Schema~~: Room entities for PhotoRecord, Category, and TransactionLog ✅ **DONE**  
+2. **SAF DataSource**: Storage Access Framework with folder discovery - *Next: 01-02*  
+3. **Safe File Operations**: Copy-verify-delete pattern with transaction logging - *01-03*  
+4. **Category Management UI**: User-defined categories with target folder selection - *01-05*  
+5. **Onboarding Flow**: SAF permissions with clear UX explanation - *01-06*  
+6. **Settings Screen**: Confidence threshold and preferences - *01-04*  
+7. **Trash Implementation**: 7-day retention folder - *01-07*
 
 ### Blockers
 
-_None currently_
+None
+
+### Decisions Made
+
+| Decision | Plan | Rationale |
+|----------|------|-----------|
+| Confidence threshold default 0.9 | 01-01 | Per user decision for High confidence |
+| Transaction log state machine (PENDING → COMPLETED) | 01-01 | Enables crash recovery |
+| Foreign keys with CASCADE delete | 01-01 | Photo metadata auto-removes when folder deleted |
+| Proto DataStore over SharedPreferences | 01-01 | Type-safe, migration-friendly |
 
 ### Decisions Pending
 
@@ -62,6 +83,7 @@ _None currently_
 | Requirements v1 | REQUIREMENTS.md | N/A | 2025-03-06 |
 | Roadmap | ROADMAP.md | N/A | 2025-03-06 |
 | State Tracking | STATE.md | N/A | 2025-03-06 |
+| 01-01 Database Foundation | phases/01-foundation-data-safety/01-01-SUMMARY.md | 1 | 2026-03-06 |
 
 ---
 
@@ -92,8 +114,9 @@ Before transitioning to Phase 2, the following must be true:
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Requirements implemented | 0/35 | 35/35 |
+| Requirements implemented | 2/35 | 35/35 |
 | Success criteria verified | 0/16 | 16/16 |
+| Plans completed | 1/7 | 7/7 |
 | Test coverage | 0% | >80% |
 | Open blockers | 0 | 0 |
 
@@ -108,5 +131,6 @@ Before transitioning to Phase 2, the following must be true:
 
 ---
 
-*Document updated: 2025-03-06*  
+*Document updated: 2026-03-06*  
+*Last session: Completed 01-01-PLAN.md (6 min)*  
 *Update frequency: Daily during active development, weekly otherwise*
