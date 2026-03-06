@@ -7,10 +7,12 @@ import com.example.photoorganizer.data.local.database.dao.CategoryDao
 import com.example.photoorganizer.data.local.database.dao.FileOperationDao
 import com.example.photoorganizer.data.local.database.dao.FolderDao
 import com.example.photoorganizer.data.local.database.dao.PhotoMetadataDao
+import com.example.photoorganizer.data.local.database.dao.TrashItemDao
 import com.example.photoorganizer.data.local.database.entities.CategoryEntity
 import com.example.photoorganizer.data.local.database.entities.FileOperationEntity
 import com.example.photoorganizer.data.local.database.entities.FolderEntity
 import com.example.photoorganizer.data.local.database.entities.PhotoMetadataEntity
+import com.example.photoorganizer.data.local.database.entities.TrashItemEntity
 
 /**
  * Room database for the Photo Organizer app.
@@ -21,18 +23,21 @@ import com.example.photoorganizer.data.local.database.entities.PhotoMetadataEnti
  * - folders: Discovered folders with learning status
  * - photo_metadata: Photo processing status and classification results
  * - file_operations: Transaction log for crash recovery
+ * - trash_items: Deleted photos with 7-day retention
  *
  * @see CategoryEntity
  * @see FolderEntity
  * @see PhotoMetadataEntity
  * @see FileOperationEntity
+ * @see TrashItemEntity
  */
 @Database(
     entities = [
         CategoryEntity::class,
         FolderEntity::class,
         PhotoMetadataEntity::class,
-        FileOperationEntity::class
+        FileOperationEntity::class,
+        TrashItemEntity::class
     ],
     version = 1,
     exportSchema = true
@@ -44,6 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDao
     abstract fun photoMetadataDao(): PhotoMetadataDao
     abstract fun fileOperationDao(): FileOperationDao
+    abstract fun trashItemDao(): TrashItemDao
 
     companion object {
         const val DATABASE_NAME = "photo_organizer.db"
