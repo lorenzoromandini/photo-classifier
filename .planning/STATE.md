@@ -29,7 +29,7 @@
 
 **01-01:** ✅ Room Database & Proto DataStore - [SUMMARY](phases/01-foundation-data-safety/01-01-SUMMARY.md)  
 **01-02:** ✅ SAF DataSource & Repository - [SUMMARY](phases/01-foundation-data-safety/01-02-SUMMARY.md)  
-**01-03:** ⏳ Crash-Safe File Operations - [PLAN](phases/01-foundation-data-safety/01-03-PLAN.md)  
+**01-03:** ✅ Crash-Safe File Operations - [SUMMARY](phases/01-foundation-data-safety/01-03-SUMMARY.md)  
 **01-04:** ⏳ Settings Screen - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md)  
 **01-05:** ⏳ Category Management - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md)  
 **01-06:** ⏳ Onboarding Flow - [PLAN](phases/01-foundation-data-safety/01-06-PLAN.md)  
@@ -46,8 +46,8 @@
 
 1. ~~Database Schema~~: Room entities for PhotoRecord, Category, and TransactionLog ✅ **DONE**  
 2. ~~SAF DataSource~~: Storage Access Framework with folder discovery ✅ **DONE**  
-3. **Safe File Operations**: Copy-verify-delete pattern with transaction logging - *Next: 01-03*  
-4. **Category Management UI**: User-defined categories with target folder selection - *01-05*  
+3. ~~Safe File Operations~~: Copy-verify-delete pattern with transaction logging ✅ **DONE**  
+4. **Category Management UI**: User-defined categories with target folder selection - *Next: 01-05*  
 5. **Onboarding Flow**: SAF permissions with clear UX explanation - *01-06*  
 6. **Settings Screen**: Confidence threshold and preferences - *01-04*  
 7. **Trash Implementation**: 7-day retention folder - *01-07*
@@ -67,6 +67,10 @@ None
 | System folder blacklist | 01-02 | Filter Android, .thumbnails, .trash during discovery |
 | Result<T> pattern for SAF operations | 01-02 | Type-safe error propagation without exceptions |
 | Offline-first repository pattern | 01-02 | DB is source of truth, SAF is data source |
+| Size verification over hash-based | 01-03 | Performance on mobile, sufficient for use case |
+| 100MB minimum storage buffer | 01-03 | Safety margin prevents mid-operation failures |
+| Three retry strategies (default/conservative/aggressive) | 01-03 | Different criticality needs different retry behavior |
+| Recovery on app startup | 01-03 | TransactionRepository.recoverPendingOperations() on launch |
 
 ### Decisions Pending
 
@@ -87,7 +91,7 @@ None
 | Roadmap | ROADMAP.md | N/A | 2025-03-06 |
 | State Tracking | STATE.md | N/A | 2025-03-06 |
 | 01-01 Database Foundation | phases/01-foundation-data-safety/01-01-SUMMARY.md | 1 | 2026-03-06 |
-| 01-02 SAF Integration | phases/01-foundation-data-safety/01-02-SUMMARY.md | 1 | 2026-03-06 |
+| 01-03 Crash-Safe File Operations | phases/01-foundation-data-safety/01-03-SUMMARY.md | 1 | 2026-03-06 |
 
 ---
 
@@ -118,9 +122,9 @@ Before transitioning to Phase 2, the following must be true:
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Requirements implemented | 3/35 | 35/35 |
+| Requirements implemented | 4/35 | 35/35 |
 | Success criteria verified | 0/16 | 16/16 |
-| Plans completed | 2/7 | 7/7 |
+| Plans completed | 3/7 | 7/7 |
 | Test coverage | 0% | >80% |
 | Open blockers | 0 | 0 |
 
@@ -136,5 +140,5 @@ Before transitioning to Phase 2, the following must be true:
 ---
 
 *Document updated: 2026-03-06*  
-*Last session: Completed 01-02-PLAN.md (7 min)*  
+*Last session: Completed 01-03-PLAN.md (12 min)*  
 *Update frequency: Daily during active development, weekly otherwise*
