@@ -149,9 +149,6 @@ See [ROADMAP.md](.planning/ROADMAP.md) for detailed phase breakdown.
 - **Conservative by Default** — High confidence threshold to avoid misplacing photos
 - **Cross-Platform** — Single codebase for Android and iOS
 
-## License
-
-MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
