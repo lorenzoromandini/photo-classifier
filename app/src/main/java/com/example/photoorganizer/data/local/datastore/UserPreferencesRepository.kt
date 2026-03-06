@@ -2,6 +2,7 @@ package com.example.photoorganizer.data.local.datastore
 
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -188,5 +189,13 @@ class UserPreferencesRepository @Inject constructor(
         dataStore.updateData { _ ->
             UserPreferences.getDefaultInstance()
         }
+    }
+
+    /**
+     * Checks if onboarding has been completed.
+     * Convenience method for navigation logic.
+     */
+    suspend fun isOnboardingComplete(): Boolean {
+        return dataStore.data.first().onboardingCompleted
     }
 }
