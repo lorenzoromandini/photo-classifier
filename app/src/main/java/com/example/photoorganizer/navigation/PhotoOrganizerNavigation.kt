@@ -1,21 +1,20 @@
 package com.example.photoorganizer.navigation
 
-import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.photoorganizer.ui.main.MainScreen
 import com.example.photoorganizer.ui.onboarding.OnboardingScreen
 import com.example.photoorganizer.ui.onboarding.OnboardingViewModel
-import kotlinx.coroutines.delay
+import com.example.photoorganizer.ui.settings.SettingsScreen
 
 /**
  * Navigation routes for the Photo Organizer app.
@@ -24,6 +23,7 @@ import kotlinx.coroutines.delay
 object Routes {
     const val ONBOARDING = "onboarding"
     const val MAIN = "main"
+    const val SETTINGS = "settings"
 }
 
 /**
@@ -73,38 +73,24 @@ fun PhotoOrganizerNavigation(
         }
 
         composable(Routes.MAIN) {
-            // Placeholder for main screen
-            // Will be implemented in later phases
-            MainScreenPlaceholder()
-        }
-    }
-}
-
-/**
- * Placeholder for main screen content.
- * Will be replaced with actual implementation in later phases.
- */
-@Composable
-private fun MainScreenPlaceholder() {
-    val context = LocalContext.current
-    
-    androidx.compose.material3.Scaffold(
-        topBar = {
-            androidx.compose.material3.TopAppBar(
-                title = { androidx.compose.material3.Text("Photo Organizer") }
+            MainScreen(
+                onNavigateToSettings = {
+                    navController.navigate(Routes.SETTINGS)
+                },
+                onNavigateToOnboarding = {
+                    navController.navigate(Routes.ONBOARDING) {
+                        popUpTo(Routes.MAIN) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
-    ) { padding ->
-        androidx.compose.foundation.layout.Box(
-            modifier = androidx.compose.ui.Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentAlignment = androidx.compose.ui.Alignment.Center
-        ) {
-            androidx.compose.material3.Text(
-                text = "Main Screen\n\nYour organized photos will appear here",
-                style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }
