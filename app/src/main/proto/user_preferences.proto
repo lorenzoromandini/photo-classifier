@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option java_package = "com.example.photoorganizer.data.local.datastore";
+option java_multiple_files = true;
+
+/**
+ * User preferences proto message for Proto DataStore.
+ * Stores user settings that persist across app restarts.
+ * Uses protobuf for type safety and schema evolution.
+ */
+message UserPreferences {
+  // ML Kit confidence threshold (0.0-1.0) for photo classification
+  // Default: 0.9 (High confidence) as per user decision
+  float confidence_threshold = 1;
+
+  // Whether the user has completed the onboarding flow
+  bool onboarding_completed = 2;
+
+  // List of folder URIs the user has selected for photo organization
+  // Stored as Document URI strings from SAF
+  repeated string folder_uris = 3;
+
+  // Number of sample photos to use for folder learning
+  // Default: 50 photos per folder
+  int32 learning_sample_size = 4;
+
+  // Whether this is the first app launch (shows welcome screen)
+  // Set to false after first launch
+  bool first_launch = 5;
+
+  // Whether background processing is enabled
+  // User can disable to save battery
+  bool background_processing_enabled = 6;
+
+  // Whether notifications are enabled for processing status
+  bool notifications_enabled = 7;
+
+  // Dark mode preference: "light", "dark", or "system"
+  string theme_preference = 8;
+
+  // Last sync timestamp for incremental updates
+  int64 last_sync_timestamp = 9;
+}
