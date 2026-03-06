@@ -31,7 +31,7 @@
 **01-02:** ✅ SAF DataSource & Repository - [SUMMARY](phases/01-foundation-data-safety/01-02-SUMMARY.md)  
 **01-03:** ✅ Crash-Safe File Operations - [SUMMARY](phases/01-foundation-data-safety/01-03-SUMMARY.md)  
 **01-04:** ⏳ Settings Screen - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md)  
-**01-05:** ⏳ Category Management - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md)  
+**01-05:** ✅ Folder Learning System - [SUMMARY](phases/01-foundation-data-safety/01-05-SUMMARY.md)  
 **01-06:** ✅ Trash System - [SUMMARY](phases/01-foundation-data-safety/01-06-SUMMARY.md)  
 **01-07:** ⏳ Additional Plans - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md)
 
@@ -71,6 +71,10 @@ None
 | 100MB minimum storage buffer | 01-03 | Safety margin prevents mid-operation failures |
 | Three retry strategies (default/conservative/aggressive) | 01-03 | Different criticality needs different retry behavior |
 | Recovery on app startup | 01-03 | TransactionRepository.recoverPendingOperations() on launch |
+| Learning threshold 0.5 vs organization 0.9 | 01-05 | Lower threshold captures more labels during learning; higher ensures accuracy during organization |
+| 50 photos sampled per folder | 01-05 | User decision: sufficient for pattern recognition without excessive processing |
+| Folder name boosts matching labels | 01-05 | Exact +15%, partial +8% - combines visual and contextual signals |
+| Bundled ML Kit model (5.7MB) | 01-05 | Works offline, no API keys needed |
 | 7-day retention period for trash | 01-06 | Matches desktop OS conventions for user safety |
 | Hidden .trash folder with .nomedia | 01-06 | Prevents gallery apps from showing deleted items |
 | KEEP policy for periodic work | 01-06 | Prevents duplicate work requests on multiple schedules |
@@ -94,7 +98,9 @@ None
 | Roadmap | ROADMAP.md | N/A | 2025-03-06 |
 | State Tracking | STATE.md | N/A | 2025-03-06 |
 | 01-01 Database Foundation | phases/01-foundation-data-safety/01-01-SUMMARY.md | 1 | 2026-03-06 |
+| 01-02 SAF DataSource & Repository | phases/01-foundation-data-safety/01-02-SUMMARY.md | 1 | 2026-03-06 |
 | 01-03 Crash-Safe File Operations | phases/01-foundation-data-safety/01-03-SUMMARY.md | 1 | 2026-03-06 |
+| 01-05 Folder Learning System | phases/01-foundation-data-safety/01-05-SUMMARY.md | 1 | 2026-03-06 |
 | 01-06 Trash System | phases/01-foundation-data-safety/01-06-SUMMARY.md | 1 | 2026-03-06 |
 
 ---
@@ -144,5 +150,5 @@ Before transitioning to Phase 2, the following must be true:
 ---
 
 *Document updated: 2026-03-06*  
-*Last session: Completed 01-06-PLAN.md (5 min)*  
+*Last session: Completed 01-05-PLAN.md (12 min)*  
 *Update frequency: Daily during active development, weekly otherwise*
