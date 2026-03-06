@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An always-running background agent for Android devices that automatically organizes every new photo as soon as it appears. The agent analyzes image content using on-device ML, classifies photos into user-defined categories (receipts, memes, food, selfies, screenshots, documents, landscapes, pets, products, artwork, etc.), and silently moves them from default folders (Downloads, DCIM/WhatsApp) into organized subdirectories within /Pictures/. The system operates silently without user interaction in normal cases, only notifying when classification confidence is low.
+An always-running background agent for Android devices that automatically organizes every new photo as soon as it appears. The agent analyzes image content using on-device ML, classifies photos into user-defined categories (receipts, memes, food, selfies, screenshots, documents, landscapes, pets, products, artwork, etc.), and moves them from default folders (Downloads, DCIM/WhatsApp) into existing gallery folders that the user has already created within /Pictures/. The system operates silently without user interaction in normal cases, only notifying when classification confidence is low. The agent works with the user's existing folder structure — it doesn't create new gallery folders but organizes photos into folders the user has already set up.
 
 ## Core Value
 
