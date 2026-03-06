@@ -112,11 +112,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MON-01 | Phase 1 | Pending |
-| MON-02 | Phase 1 | Pending |
-| MON-03 | Phase 1 | Pending |
-| MON-04 | Phase 1 | Pending |
-| MON-05 | Phase 1 | Pending |
+| MON-01 | Phase 2 | Pending |
+| MON-02 | Phase 2 | Pending |
+| MON-03 | Phase 2 | Pending |
+| MON-04 | Phase 2 | Pending |
+| MON-05 | Phase 2 | Pending |
 | ML-01 | Phase 2 | Pending |
 | ML-02 | Phase 2 | Pending |
 | ML-03 | Phase 2 | Pending |
@@ -125,7 +125,7 @@
 | FILE-01 | Phase 1 | Pending |
 | FILE-02 | Phase 1 | Pending |
 | FILE-03 | Phase 1 | Pending |
-| FILE-04 | Phase 1 | Pending |
+| FILE-04 | Phase 2 | Pending |
 | FILE-05 | Phase 1 | Pending |
 | FILE-06 | Phase 3 | Pending |
 | CAT-01 | Phase 1 | Pending |
@@ -155,8 +155,19 @@
 
 **Coverage:**
 - v1 requirements: 35 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 35 (pending roadmap creation)
+- Mapped to phases: 35 (100% coverage)
+- Unmapped: 0
+
+### Phase Distribution
+
+| Phase | Name | Requirement Count | Percentage |
+|-------|------|-------------------|------------|
+| Phase 1 | Foundation & Data Safety | 11 | 31% |
+| Phase 2 | Detection & Classification Pipeline | 14 | 40% |
+| Phase 3 | Notifications & Polish | 7 | 20% |
+| Phase 4 | Release Preparation | 3 | 9% |
+
+*See [ROADMAP.md](ROADMAP.md) for detailed phase definitions and success criteria.*
 
 ---
 
