@@ -2,7 +2,7 @@
 
 **Project:** Photo-Classificator  
 **Current Phase:** Phase 1 — Foundation & Data Safety  
-**Last Updated:** 2025-03-06  
+**Last Updated:** 2026-03-06  
 
 ---
 
@@ -32,8 +32,8 @@
 **01-03:** ✅ Crash-Safe File Operations - [SUMMARY](phases/01-foundation-data-safety/01-03-SUMMARY.md)  
 **01-04:** ⏳ Settings Screen - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md)  
 **01-05:** ⏳ Category Management - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md)  
-**01-06:** ⏳ Onboarding Flow - [PLAN](phases/01-foundation-data-safety/01-06-PLAN.md)  
-**01-07:** ⏳ Trash Implementation - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md)
+**01-06:** ✅ Trash System - [SUMMARY](phases/01-foundation-data-safety/01-06-SUMMARY.md)  
+**01-07:** ⏳ Additional Plans - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md)
 
 ---
 
@@ -71,6 +71,9 @@ None
 | 100MB minimum storage buffer | 01-03 | Safety margin prevents mid-operation failures |
 | Three retry strategies (default/conservative/aggressive) | 01-03 | Different criticality needs different retry behavior |
 | Recovery on app startup | 01-03 | TransactionRepository.recoverPendingOperations() on launch |
+| 7-day retention period for trash | 01-06 | Matches desktop OS conventions for user safety |
+| Hidden .trash folder with .nomedia | 01-06 | Prevents gallery apps from showing deleted items |
+| KEEP policy for periodic work | 01-06 | Prevents duplicate work requests on multiple schedules |
 
 ### Decisions Pending
 
@@ -92,6 +95,7 @@ None
 | State Tracking | STATE.md | N/A | 2025-03-06 |
 | 01-01 Database Foundation | phases/01-foundation-data-safety/01-01-SUMMARY.md | 1 | 2026-03-06 |
 | 01-03 Crash-Safe File Operations | phases/01-foundation-data-safety/01-03-SUMMARY.md | 1 | 2026-03-06 |
+| 01-06 Trash System | phases/01-foundation-data-safety/01-06-SUMMARY.md | 1 | 2026-03-06 |
 
 ---
 
@@ -124,7 +128,7 @@ Before transitioning to Phase 2, the following must be true:
 |--------|---------|--------|
 | Requirements implemented | 4/35 | 35/35 |
 | Success criteria verified | 0/16 | 16/16 |
-| Plans completed | 3/7 | 7/7 |
+| Plans completed | 4/7 | 7/7 |
 | Test coverage | 0% | >80% |
 | Open blockers | 0 | 0 |
 
@@ -140,5 +144,5 @@ Before transitioning to Phase 2, the following must be true:
 ---
 
 *Document updated: 2026-03-06*  
-*Last session: Completed 01-03-PLAN.md (12 min)*  
+*Last session: Completed 01-06-PLAN.md (5 min)*  
 *Update frequency: Daily during active development, weekly otherwise*
