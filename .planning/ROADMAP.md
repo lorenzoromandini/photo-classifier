@@ -63,6 +63,19 @@ This roadmap delivers the Android Photo Auto-Organizer through **4 phases**, ens
 ### Phase 1 Dependencies
 - None (foundational phase)
 
+### Plans
+**7 plans in 3 execution waves:**
+
+| Plan | Objective | Wave | Files |
+|------|-----------|------|-------|
+| [ ] 01-01 | Create Room database with entities for categories, folders, photos, and transaction log. Implement Proto DataStore for user preferences. | 1 | 16 files |
+| [ ] 01-02 | Implement SAF integration for folder discovery and URI permission persistence. Build FolderRepository with offline-first pattern. | 1 | 4 files |
+| [ ] 01-03 | Create SafeFileOperations with copy-then-verify-then-delete pattern. Implement transaction logging and crash recovery. | 1 | 4 files |
+| [ ] 01-04 | Build single-screen onboarding with SAF permission request and folder discovery. | 2 | 6 files |
+| [ ] 01-05 | Implement folder learning with ML Kit Image Labeling (50 photos per folder). Background WorkManager worker. | 2 | 5 files |
+| [ ] 01-06 | Create trash system with 7-day retention and daily cleanup worker. | 2 | 3 files |
+| [ ] 01-07 | Build main screen and settings. Implement startup crash recovery and confidence threshold selection. | 3 | 7 files |
+
 ### Deliverables
 - Category management UI
 - Onboarding flow with SAF permissions
