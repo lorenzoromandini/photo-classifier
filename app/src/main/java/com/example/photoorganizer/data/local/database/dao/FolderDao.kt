@@ -30,6 +30,13 @@ interface FolderDao {
     fun getByLearningStatus(status: String): Flow<List<FolderEntity>>
 
     /**
+     * Get folders with PENDING learning status.
+     * Used to find folders that need learning.
+     */
+    @Query("SELECT * FROM folders WHERE learningStatus = 'PENDING'")
+    suspend fun getPendingFolders(): List<FolderEntity>
+
+    /**
      * Get active folders only.
      * Active folders are included in photo organization.
      */
