@@ -6,13 +6,15 @@ import android.net.Uri
 import android.os.StatFs
 import android.provider.OpenableColumns
 import android.util.Log
-import com.example.photoorganizer.data.local.dao.FileOperationDao
-import com.example.photoorganizer.data.local.entity.FileOperationEntity
+import com.example.photoorganizer.data.local.database.dao.FileOperationDao
+import com.example.photoorganizer.data.local.database.entities.FileOperationEntity
+import com.example.photoorganizer.data.local.database.entities.OperationStatus
+import com.example.photoorganizer.data.local.database.entities.OperationType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
-import java.security.MessageDigest
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,7 +58,7 @@ class SafeFileOperations @Inject constructor(
         runCatching {
             // Step 1: Create operation log
             val operationId = createOperationLog(
-                FileOperationEntity.OperationType.MOVE,
+                OperationType.COPY,
                 sourceUri,
                 destUri
             )
@@ -67,27 +69,27 @@ class SafeFileOperations @Inject constructor(
                     ?: throw IOException("Cannot determine source file size")
 
                 if (!hasEnoughSpace(sourceSize + MIN_FREE_SPACE_BYTES)) {
-                    updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, "Insufficient storage space")
+                    fileOperationDao.markFailed(operationId, "Insufficient storage space")
                     throw StorageFullException("Need ${sourceSize + MIN_FREE_SPACE_BYTES} bytes, insufficient space available")
                 }
 
                 // Step 3: Copy file
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.COPYING)
+                fileOperationDao.updateStatus(operationId, OperationStatus.COPYING.name)
                 copyFile(sourceUri, destUri)
 
                 // Step 4: Verify copy
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.VERIFYING)
+                fileOperationDao.updateStatus(operationId, OperationStatus.VERIFYING.name)
                 val verification = verifyCopy(sourceUri, destUri)
 
                 if (!verification.isSuccess) {
-                    updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, verification.toString())
+                    fileOperationDao.markFailed(operationId, verification.toString())
                     // Clean up failed destination
                     deleteFile(destUri)
                     throw IOException("Verification failed: $verification")
                 }
 
                 // Step 5: Delete source
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.DELETING)
+                fileOperationDao.updateStatus(operationId, OperationStatus.DELETING.name)
                 val deleteResult = deleteFile(sourceUri)
 
                 if (!deleteResult) {
@@ -96,10 +98,10 @@ class SafeFileOperations @Inject constructor(
                 }
 
                 // Step 6: Mark complete
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.COMPLETED)
+                fileOperationDao.markCompleted(operationId, System.currentTimeMillis())
 
             } catch (e: Exception) {
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, e.message)
+                fileOperationDao.markFailed(operationId, e.message ?: "Unknown error")
                 throw e
             }
         }
@@ -116,7 +118,7 @@ class SafeFileOperations @Inject constructor(
         runCatching {
             // Step 1: Create operation log
             val operationId = createOperationLog(
-                FileOperationEntity.OperationType.COPY,
+                OperationType.COPY,
                 sourceUri,
                 destUri
             )
@@ -127,30 +129,30 @@ class SafeFileOperations @Inject constructor(
                     ?: throw IOException("Cannot determine source file size")
 
                 if (!hasEnoughSpace(sourceSize + MIN_FREE_SPACE_BYTES)) {
-                    updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, "Insufficient storage space")
+                    fileOperationDao.markFailed(operationId, "Insufficient storage space")
                     throw StorageFullException("Need ${sourceSize + MIN_FREE_SPACE_BYTES} bytes, insufficient space available")
                 }
 
                 // Step 3: Copy file
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.COPYING)
+                fileOperationDao.updateStatus(operationId, OperationStatus.COPYING.name)
                 copyFile(sourceUri, destUri)
 
                 // Step 4: Verify copy
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.VERIFYING)
+                fileOperationDao.updateStatus(operationId, OperationStatus.VERIFYING.name)
                 val verification = verifyCopy(sourceUri, destUri)
 
                 if (!verification.isSuccess) {
-                    updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, verification.toString())
+                    fileOperationDao.markFailed(operationId, verification.toString())
                     // Clean up failed destination
                     deleteFile(destUri)
                     throw IOException("Verification failed: $verification")
                 }
 
                 // Step 5: Mark complete (no delete for copy)
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.COMPLETED)
+                fileOperationDao.markCompleted(operationId, System.currentTimeMillis())
 
             } catch (e: Exception) {
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, e.message)
+                fileOperationDao.markFailed(operationId, e.message ?: "Unknown error")
                 throw e
             }
         }
@@ -166,26 +168,26 @@ class SafeFileOperations @Inject constructor(
         runCatching {
             // Step 1: Create operation log
             val operationId = createOperationLog(
-                FileOperationEntity.OperationType.DELETE,
+                OperationType.DELETE,
                 sourceUri,
                 null
             )
 
             try {
                 // Step 2: Delete
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.DELETING)
+                fileOperationDao.updateStatus(operationId, OperationStatus.DELETING.name)
                 val deleteResult = deleteFile(sourceUri)
 
                 if (!deleteResult) {
-                    updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, "Delete operation returned false")
+                    fileOperationDao.markFailed(operationId, "Delete operation returned false")
                     throw IOException("Failed to delete file: $sourceUri")
                 }
 
                 // Step 3: Mark complete
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.COMPLETED)
+                fileOperationDao.markCompleted(operationId, System.currentTimeMillis())
 
             } catch (e: Exception) {
-                updateOperationStatus(operationId, FileOperationEntity.OperationStatus.FAILED, e.message)
+                fileOperationDao.markFailed(operationId, e.message ?: "Unknown error")
                 throw e
             }
         }
@@ -314,56 +316,23 @@ class SafeFileOperations @Inject constructor(
      * @return ID of the created operation
      */
     private suspend fun createOperationLog(
-        operationType: FileOperationEntity.OperationType,
+        operationType: OperationType,
         sourceUri: Uri,
         destUri: Uri?
-    ): Long {
+    ): String {
         val operation = FileOperationEntity(
-            operationType = operationType,
+            id = UUID.randomUUID().toString(),
             sourceUri = sourceUri.toString(),
-            destinationUri = destUri?.toString(),
-            status = FileOperationEntity.OperationStatus.PENDING
+            destUri = destUri?.toString() ?: "",
+            operationType = operationType,
+            status = OperationStatus.PENDING,
+            createdAt = System.currentTimeMillis(),
+            completedAt = null,
+            retryCount = 0,
+            errorMessage = null
         )
-        return fileOperationDao.insert(operation)
-    }
-
-    /**
-     * Update operation status in the log.
-     *
-     * @param operationId ID of the operation
-     * @param status New status
-     * @param errorMessage Optional error message
-     */
-    private suspend fun updateOperationStatus(
-        operationId: Long,
-        status: FileOperationEntity.OperationStatus,
-        errorMessage: String? = null
-    ) {
-        fileOperationDao.updateStatus(operationId, status, errorMessage)
-    }
-
-    /**
-     * Calculate SHA-256 hash of a file (for future use if needed).
-     *
-     * @param uri File URI
-     * @return Hex string of SHA-256 hash, or null if failed
-     */
-    @Suppress("unused")
-    private suspend fun calculateFileHash(uri: Uri): String? = withContext(Dispatchers.IO) {
-        try {
-            contentResolver.openInputStream(uri)?.use { input ->
-                val digest = MessageDigest.getInstance("SHA-256")
-                val buffer = ByteArray(BUFFER_SIZE)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    digest.update(buffer, 0, bytesRead)
-                }
-                digest.digest().joinToString("") { "%02x".format(it) }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error calculating hash for $uri", e)
-            null
-        }
+        fileOperationDao.insert(operation)
+        return operation.id
     }
 }
 

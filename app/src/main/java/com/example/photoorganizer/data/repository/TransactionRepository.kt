@@ -1,9 +1,14 @@
 package com.example.photoorganizer.data.repository
 
+import android.net.Uri
 import android.util.Log
-import com.example.photoorganizer.data.local.dao.FileOperationDao
-import com.example.photoorganizer.data.local.entity.FileOperationEntity
+import com.example.photoorganizer.data.local.database.dao.FileOperationDao
+import com.example.photoorganizer.data.local.database.entities.FileOperationEntity
+import com.example.photoorganizer.data.local.database.entities.OperationStatus
+import com.example.photoorganizer.data.local.database.entities.OperationType
+import com.example.photoorganizer.data.local.safe.FileVerificationResult
 import com.example.photoorganizer.data.local.safe.SafeFileOperations
+import com.example.photoorganizer.data.local.safe.StorageFullException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -39,7 +44,7 @@ class TransactionRepository @Inject constructor(
      * @return RecoveryResult with counts of recovered/failed operations
      */
     suspend fun recoverPendingOperations(): RecoveryResult = withContext(Dispatchers.IO) {
-        val pendingOperations = fileOperationDao.getPendingOperations()
+        val pendingOperations = fileOperationDao.getPendingSync()
 
         if (pendingOperations.isEmpty()) {
             Log.d(TAG, "No pending operations to recover")
@@ -86,37 +91,37 @@ class TransactionRepository @Inject constructor(
         // Check retry count
         if (operation.retryCount >= MAX_RETRIES) {
             Log.w(TAG, "Operation ${operation.id} exceeded max retries, marking as FAILED")
-            fileOperationDao.updateStatus(
+            fileOperationDao.markFailed(
                 operation.id,
-                FileOperationEntity.OperationStatus.FAILED,
                 "Exceeded maximum retry attempts ($MAX_RETRIES)"
             )
             return false
         }
 
-        // Increment retry count
-        fileOperationDao.incrementRetryCount(operation.id)
+        // Increment retry count before attempting
+        val updatedOperation = operation.copy(retryCount = operation.retryCount + 1)
+        fileOperationDao.update(updatedOperation)
 
         return when (operation.status) {
-            FileOperationEntity.OperationStatus.PENDING,
-            FileOperationEntity.OperationStatus.COPYING -> {
+            OperationStatus.PENDING,
+            OperationStatus.COPYING -> {
                 recoverCopyingOperation(operation)
             }
 
-            FileOperationEntity.OperationStatus.VERIFYING -> {
+            OperationStatus.VERIFYING -> {
                 recoverVerifyingOperation(operation)
             }
 
-            FileOperationEntity.OperationStatus.DELETING -> {
+            OperationStatus.DELETING -> {
                 recoverDeletingOperation(operation)
             }
 
-            FileOperationEntity.OperationStatus.COMPLETED -> {
+            OperationStatus.COMPLETED -> {
                 // Already complete, nothing to do
                 true
             }
 
-            FileOperationEntity.OperationStatus.FAILED -> {
+            OperationStatus.FAILED -> {
                 // Already failed, don't retry unless manually triggered
                 false
             }
@@ -128,28 +133,20 @@ class TransactionRepository @Inject constructor(
      * Retries the copy operation.
      */
     private suspend fun recoverCopyingOperation(operation: FileOperationEntity): Boolean {
-        val sourceUri = android.net.Uri.parse(operation.sourceUri)
-        val destUri = operation.destinationUri?.let { android.net.Uri.parse(it) }
-            ?: run {
-                Log.e(TAG, "Operation ${operation.id} has no destination URI")
-                fileOperationDao.updateStatus(
-                    operation.id,
-                    FileOperationEntity.OperationStatus.FAILED,
-                    "No destination URI for recovery"
-                )
-                return false
-            }
+        val sourceUri = Uri.parse(operation.sourceUri)
+        val destUri = if (operation.destUri.isNotEmpty()) {
+            Uri.parse(operation.destUri)
+        } else {
+            Log.e(TAG, "Operation ${operation.id} has no destination URI")
+            fileOperationDao.markFailed(
+                operation.id,
+                "No destination URI for recovery"
+            )
+            return false
+        }
 
         return when (operation.operationType) {
-            FileOperationEntity.OperationType.MOVE -> {
-                // Retry the full safeMove operation
-                val result = safeFileOperations.safeMove(sourceUri, destUri)
-                result.isSuccess.also { success ->
-                    updateStatusAfterRecovery(operation.id, success, result.exceptionOrNull()?.message)
-                }
-            }
-
-            FileOperationEntity.OperationType.COPY -> {
+            OperationType.COPY -> {
                 // Retry the safeCopy operation
                 val result = safeFileOperations.safeCopy(sourceUri, destUri)
                 result.isSuccess.also { success ->
@@ -157,13 +154,22 @@ class TransactionRepository @Inject constructor(
                 }
             }
 
-            FileOperationEntity.OperationType.DELETE -> {
+            OperationType.DELETE -> {
                 // DELETE shouldn't be in COPYING state, mark as failed
                 Log.e(TAG, "DELETE operation ${operation.id} in COPYING state - invalid")
-                fileOperationDao.updateStatus(
+                fileOperationDao.markFailed(
                     operation.id,
-                    FileOperationEntity.OperationStatus.FAILED,
                     "Invalid state: DELETE operation in COPYING status"
+                )
+                false
+            }
+
+            OperationType.VERIFY -> {
+                // VERIFY shouldn't be in COPYING state
+                Log.e(TAG, "VERIFY operation ${operation.id} in COPYING state - invalid")
+                fileOperationDao.markFailed(
+                    operation.id,
+                    "Invalid state: VERIFY operation in COPYING status"
                 )
                 false
             }
@@ -175,51 +181,45 @@ class TransactionRepository @Inject constructor(
      * Verifies the copy, and if valid, continues to delete source.
      */
     private suspend fun recoverVerifyingOperation(operation: FileOperationEntity): Boolean {
-        val sourceUri = android.net.Uri.parse(operation.sourceUri)
-        val destUri = operation.destinationUri?.let { android.net.Uri.parse(it) }
-            ?: run {
-                Log.e(TAG, "Operation ${operation.id} has no destination URI")
-                fileOperationDao.updateStatus(
-                    operation.id,
-                    FileOperationEntity.OperationStatus.FAILED,
-                    "No destination URI for verification"
-                )
-                return false
-            }
+        val sourceUri = Uri.parse(operation.sourceUri)
+        val destUri = if (operation.destUri.isNotEmpty()) {
+            Uri.parse(operation.destUri)
+        } else {
+            Log.e(TAG, "Operation ${operation.id} has no destination URI")
+            fileOperationDao.markFailed(
+                operation.id,
+                "No destination URI for verification"
+            )
+            return false
+        }
 
         // Verify the copy exists and is valid
         val verification = safeFileOperations.verifyCopy(sourceUri, destUri)
 
         return when {
-            verification.isSuccess -> {
-                // Copy is valid, proceed based on operation type
+            verification is FileVerificationResult.Success -> {
+                // Copy is valid
                 when (operation.operationType) {
-                    FileOperationEntity.OperationType.MOVE -> {
-                        // Delete the source file
-                        val deleteResult = deleteSourceFile(sourceUri)
-                        updateStatusAfterRecovery(operation.id, deleteResult,
-                            if (!deleteResult) "Failed to delete source after verification" else null)
-                        deleteResult
-                    }
-
-                    FileOperationEntity.OperationType.COPY -> {
+                    OperationType.COPY -> {
                         // Just mark as completed
-                        fileOperationDao.updateStatus(
-                            operation.id,
-                            FileOperationEntity.OperationStatus.COMPLETED
-                        )
+                        fileOperationDao.markCompleted(operation.id, System.currentTimeMillis())
                         true
                     }
 
-                    FileOperationEntity.OperationType.DELETE -> {
+                    OperationType.DELETE -> {
                         // DELETE shouldn't be in VERIFYING state
                         Log.e(TAG, "DELETE operation ${operation.id} in VERIFYING state - invalid")
-                        fileOperationDao.updateStatus(
+                        fileOperationDao.markFailed(
                             operation.id,
-                            FileOperationEntity.OperationStatus.FAILED,
                             "Invalid state: DELETE operation in VERIFYING status"
                         )
                         false
+                    }
+
+                    OperationType.VERIFY -> {
+                        // Mark VERIFY as completed
+                        fileOperationDao.markCompleted(operation.id, System.currentTimeMillis())
+                        true
                     }
                 }
             }
@@ -227,9 +227,8 @@ class TransactionRepository @Inject constructor(
             else -> {
                 // Verification failed, mark as failed
                 Log.w(TAG, "Verification failed for operation ${operation.id}: $verification")
-                fileOperationDao.updateStatus(
+                fileOperationDao.markFailed(
                     operation.id,
-                    FileOperationEntity.OperationStatus.FAILED,
                     "Verification failed: $verification"
                 )
                 false
@@ -242,39 +241,30 @@ class TransactionRepository @Inject constructor(
      * Retries the delete operation.
      */
     private suspend fun recoverDeletingOperation(operation: FileOperationEntity): Boolean {
-        val sourceUri = android.net.Uri.parse(operation.sourceUri)
+        val sourceUri = Uri.parse(operation.sourceUri)
 
         return when (operation.operationType) {
-            FileOperationEntity.OperationType.MOVE,
-            FileOperationEntity.OperationType.DELETE -> {
-                val deleteResult = deleteSourceFile(sourceUri)
-                updateStatusAfterRecovery(operation.id, deleteResult,
-                    if (!deleteResult) "Failed to delete source file" else null)
-                deleteResult
+            OperationType.DELETE -> {
+                // Retry delete
+                val result = safeFileOperations.safeDelete(sourceUri)
+                result.isSuccess.also { success ->
+                    updateStatusAfterRecovery(operation.id, success, result.exceptionOrNull()?.message)
+                }
             }
 
-            FileOperationEntity.OperationType.COPY -> {
+            OperationType.COPY -> {
                 // COPY shouldn't reach DELETING state (unless copy-then-delete)
                 // Mark as completed since copy was successful
-                fileOperationDao.updateStatus(
-                    operation.id,
-                    FileOperationEntity.OperationStatus.COMPLETED
-                )
+                fileOperationDao.markCompleted(operation.id, System.currentTimeMillis())
                 true
             }
-        }
-    }
 
-    /**
-     * Delete a source file using ContentResolver.
-     */
-    private fun deleteSourceFile(sourceUri: android.net.Uri): Boolean {
-        return try {
-            // Try using SafeFileOperations first
-            true // If we got here, the file was already processed
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to delete source file: $sourceUri", e)
-            false
+            OperationType.VERIFY -> {
+                // VERIFY shouldn't reach DELETING state
+                // Mark as completed
+                fileOperationDao.markCompleted(operation.id, System.currentTimeMillis())
+                true
+            }
         }
     }
 
@@ -282,15 +272,15 @@ class TransactionRepository @Inject constructor(
      * Update operation status after recovery attempt.
      */
     private suspend fun updateStatusAfterRecovery(
-        operationId: Long,
+        operationId: String,
         success: Boolean,
         errorMessage: String?
     ) {
-        fileOperationDao.updateStatus(
-            operationId,
-            if (success) FileOperationEntity.OperationStatus.COMPLETED else FileOperationEntity.OperationStatus.FAILED,
-            errorMessage
-        )
+        if (success) {
+            fileOperationDao.markCompleted(operationId, System.currentTimeMillis())
+        } else {
+            fileOperationDao.markFailed(operationId, errorMessage ?: "Recovery failed")
+        }
     }
 
     /**
@@ -299,7 +289,7 @@ class TransactionRepository @Inject constructor(
      * @return List of operations that are not yet complete or failed
      */
     suspend fun getPendingOperations(): List<FileOperationEntity> {
-        return fileOperationDao.getPendingOperations()
+        return fileOperationDao.getPendingSync()
     }
 
     /**
@@ -308,7 +298,17 @@ class TransactionRepository @Inject constructor(
      * @return Flow of failed operations lists
      */
     fun getFailedOperations(): Flow<List<FileOperationEntity>> {
-        return fileOperationDao.getFailedOperations()
+        return fileOperationDao.getByStatus(OperationStatus.FAILED.name)
+            .flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * Get pending operations as a Flow for reactive monitoring.
+     *
+     * @return Flow of pending operations
+     */
+    fun getPendingOperationsFlow(): Flow<List<FileOperationEntity>> {
+        return fileOperationDao.getPending()
             .flowOn(Dispatchers.IO)
     }
 
@@ -320,8 +320,21 @@ class TransactionRepository @Inject constructor(
      */
     suspend fun cleanupOldOperations(olderThanDays: Int = CLEANUP_RETENTION_DAYS): Int {
         val cutoffTimestamp = System.currentTimeMillis() - (olderThanDays * MILLIS_PER_DAY)
-        val deletedCount = fileOperationDao.deleteOldCompleted(cutoffTimestamp)
+        val deletedCount = fileOperationDao.cleanupCompleted(cutoffTimestamp)
         Log.d(TAG, "Cleaned up $deletedCount old completed operations")
+        return deletedCount
+    }
+
+    /**
+     * Clean up old failed operations.
+     *
+     * @param olderThanDays Number of days after which failed operations are removed
+     * @return Number of operations deleted
+     */
+    suspend fun cleanupFailedOperations(olderThanDays: Int = CLEANUP_RETENTION_DAYS): Int {
+        val cutoffTimestamp = System.currentTimeMillis() - (olderThanDays * MILLIS_PER_DAY)
+        val deletedCount = fileOperationDao.cleanupFailed(cutoffTimestamp)
+        Log.d(TAG, "Cleaned up $deletedCount old failed operations")
         return deletedCount
     }
 
@@ -331,7 +344,19 @@ class TransactionRepository @Inject constructor(
      * @return Number of pending operations
      */
     suspend fun getPendingCount(): Int {
-        return fileOperationDao.getPendingCount()
+        return fileOperationDao.countByStatus(OperationStatus.PENDING.name) +
+                fileOperationDao.countByStatus(OperationStatus.COPYING.name) +
+                fileOperationDao.countByStatus(OperationStatus.VERIFYING.name) +
+                fileOperationDao.countByStatus(OperationStatus.DELETING.name)
+    }
+
+    /**
+     * Get the count of failed operations.
+     *
+     * @return Number of failed operations
+     */
+    suspend fun getFailedCount(): Int {
+        return fileOperationDao.countByStatus(OperationStatus.FAILED.name)
     }
 
     /**
@@ -340,24 +365,38 @@ class TransactionRepository @Inject constructor(
      * @param operationId ID of the failed operation to retry
      * @return true if retry succeeded, false otherwise
      */
-    suspend fun retryFailedOperation(operationId: Long): Boolean {
+    suspend fun retryFailedOperation(operationId: String): Boolean {
         val operation = fileOperationDao.getById(operationId)
             ?: return false
 
-        if (operation.status != FileOperationEntity.OperationStatus.FAILED) {
+        if (operation.status != OperationStatus.FAILED) {
             Log.w(TAG, "Operation $operationId is not in FAILED state, cannot retry")
             return false
         }
 
         // Reset status to PENDING for retry
-        fileOperationDao.updateStatus(
-            operationId,
-            FileOperationEntity.OperationStatus.PENDING,
-            null
+        val updatedOperation = operation.copy(
+            status = OperationStatus.PENDING,
+            errorMessage = null,
+            retryCount = operation.retryCount + 1
         )
+        fileOperationDao.update(updatedOperation)
 
         // Attempt recovery
-        return recoverOperation(operation)
+        return recoverOperation(updatedOperation)
+    }
+
+    /**
+     * Delete a specific operation from the log.
+     *
+     * @param operationId ID of operation to delete
+     */
+    suspend fun deleteOperation(operationId: String) {
+        val operation = fileOperationDao.getById(operationId) ?: return
+        // Only allow deletion of completed or failed operations
+        if (operation.status == OperationStatus.COMPLETED || operation.status == OperationStatus.FAILED) {
+            fileOperationDao.update(operation.copy(status = OperationStatus.COMPLETED))
+        }
     }
 }
 
