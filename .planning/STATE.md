@@ -28,7 +28,7 @@
 ### Current Plan Progress
 
 **01-01:** ✅ Room Database & Proto DataStore - [SUMMARY](phases/01-foundation-data-safety/01-01-SUMMARY.md)  
-**01-02:** ⏳ SAF DataSource & Repository - [PLAN](phases/01-foundation-data-safety/01-02-PLAN.md)  
+**01-02:** ✅ SAF DataSource & Repository - [SUMMARY](phases/01-foundation-data-safety/01-02-SUMMARY.md)  
 **01-03:** ⏳ Crash-Safe File Operations - [PLAN](phases/01-foundation-data-safety/01-03-PLAN.md)  
 **01-04:** ⏳ Settings Screen - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md)  
 **01-05:** ⏳ Category Management - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md)  
@@ -45,8 +45,8 @@
 ### Current Priorities
 
 1. ~~Database Schema~~: Room entities for PhotoRecord, Category, and TransactionLog ✅ **DONE**  
-2. **SAF DataSource**: Storage Access Framework with folder discovery - *Next: 01-02*  
-3. **Safe File Operations**: Copy-verify-delete pattern with transaction logging - *01-03*  
+2. ~~SAF DataSource~~: Storage Access Framework with folder discovery ✅ **DONE**  
+3. **Safe File Operations**: Copy-verify-delete pattern with transaction logging - *Next: 01-03*  
 4. **Category Management UI**: User-defined categories with target folder selection - *01-05*  
 5. **Onboarding Flow**: SAF permissions with clear UX explanation - *01-06*  
 6. **Settings Screen**: Confidence threshold and preferences - *01-04*  
@@ -64,6 +64,9 @@ None
 | Transaction log state machine (PENDING → COMPLETED) | 01-01 | Enables crash recovery |
 | Foreign keys with CASCADE delete | 01-01 | Photo metadata auto-removes when folder deleted |
 | Proto DataStore over SharedPreferences | 01-01 | Type-safe, migration-friendly |
+| System folder blacklist | 01-02 | Filter Android, .thumbnails, .trash during discovery |
+| Result<T> pattern for SAF operations | 01-02 | Type-safe error propagation without exceptions |
+| Offline-first repository pattern | 01-02 | DB is source of truth, SAF is data source |
 
 ### Decisions Pending
 
@@ -84,6 +87,7 @@ None
 | Roadmap | ROADMAP.md | N/A | 2025-03-06 |
 | State Tracking | STATE.md | N/A | 2025-03-06 |
 | 01-01 Database Foundation | phases/01-foundation-data-safety/01-01-SUMMARY.md | 1 | 2026-03-06 |
+| 01-02 SAF Integration | phases/01-foundation-data-safety/01-02-SUMMARY.md | 1 | 2026-03-06 |
 
 ---
 
@@ -114,9 +118,9 @@ Before transitioning to Phase 2, the following must be true:
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Requirements implemented | 2/35 | 35/35 |
+| Requirements implemented | 3/35 | 35/35 |
 | Success criteria verified | 0/16 | 16/16 |
-| Plans completed | 1/7 | 7/7 |
+| Plans completed | 2/7 | 7/7 |
 | Test coverage | 0% | >80% |
 | Open blockers | 0 | 0 |
 
@@ -132,5 +136,5 @@ Before transitioning to Phase 2, the following must be true:
 ---
 
 *Document updated: 2026-03-06*  
-*Last session: Completed 01-01-PLAN.md (6 min)*  
+*Last session: Completed 01-02-PLAN.md (7 min)*  
 *Update frequency: Daily during active development, weekly otherwise*
