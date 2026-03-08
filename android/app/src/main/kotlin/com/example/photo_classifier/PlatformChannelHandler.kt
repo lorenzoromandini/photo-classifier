@@ -15,6 +15,7 @@ class PlatformChannelHandler(private val activity: Activity) : MethodChannel.Met
     }
     
     private val safHelper = SafHelper(activity)
+    private val safeFileHelper = SafeFileHelper(activity)
     private var pendingResult: MethodChannel.Result? = null
     
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -25,6 +26,12 @@ class PlatformChannelHandler(private val activity: Activity) : MethodChannel.Met
             "hasPermission" -> hasPermission(call, result)
             "listPhotos" -> listPhotos(call, result)
             "countPhotos" -> countPhotos(call, result)
+            "copyFile" -> copyFile(call, result)
+            "verifyFile" -> verifyFile(call, result)
+            "deleteFile" -> deleteFile(call, result)
+            "getFileSize" -> getFileSize(call, result)
+            "getAvailableStorage" -> getAvailableStorage(result)
+            "exists" -> exists(call, result)
             else -> result.notImplemented()
         }
     }
@@ -179,6 +186,249 @@ class PlatformChannelHandler(private val activity: Activity) : MethodChannel.Met
         } catch (e: Exception) {
             Log.e(TAG, "Error counting photos", e)
             result.error("PHOTO_COUNT_ERROR", "Failed to count photos: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Copy file from source to destination via SAF
+     */
+    private fun copyFile(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val sourceUriString = call.argument<String>("sourceUri")
+                ?: return result.error("INVALID_URI", "Source URI is required", null)
+            val destUriString = call.argument<String>("destUri")
+                ?: return result.error("INVALID_URI", "Destination URI is required", null)
+            
+            val sourceUri = Uri.parse(sourceUriString)
+            val destUri = Uri.parse(destUriString)
+            
+            safeFileHelper.copyFile(sourceUri, destUri)
+                .fold(
+                    onSuccess = { bytesCopied ->
+                        Log.d(TAG, "Copied $bytesCopied bytes")
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to bytesCopied
+                        ))
+                    },
+                    onFailure = { error ->
+                        val errorCode = when (error) {
+                            is IllegalStateException -> "STORAGE_FULL"
+                            is SecurityException -> "PERMISSION_DENIED"
+                            is IllegalArgumentException -> "FILE_NOT_FOUND"
+                            else -> "IO_ERROR"
+                        }
+                        Log.e(TAG, "Copy failed: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to errorCode
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in copyFile", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Verify file copy by comparing sizes and checksums
+     */
+    private fun verifyFile(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val sourceUriString = call.argument<String>("sourceUri")
+                ?: return result.error("INVALID_URI", "Source URI is required", null)
+            val destUriString = call.argument<String>("destUri")
+                ?: return result.error("INVALID_URI", "Destination URI is required", null)
+            
+            val sourceUri = Uri.parse(sourceUriString)
+            val destUri = Uri.parse(destUriString)
+            
+            safeFileHelper.verifyFile(sourceUri, destUri)
+                .fold(
+                    onSuccess = { matches ->
+                        if (matches) {
+                            Log.d(TAG, "Verification passed")
+                            result.success(mapOf(
+                                "success" to true,
+                                "data" to true
+                            ))
+                        } else {
+                            Log.e(TAG, "Verification failed: files don't match")
+                            result.success(mapOf(
+                                "success" to false,
+                                "error" to "File verification failed: size or checksum mismatch",
+                                "errorCode" to "VERIFICATION_FAILED"
+                            ))
+                        }
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Verification error: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to "VERIFICATION_FAILED"
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in verifyFile", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "VERIFICATION_FAILED"
+            ))
+        }
+    }
+    
+    /**
+     * Delete file via SAF
+     */
+    private fun deleteFile(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val uriString = call.argument<String>("uri")
+                ?: return result.error("INVALID_URI", "URI is required", null)
+            
+            val uri = Uri.parse(uriString)
+            
+            safeFileHelper.deleteFile(uri)
+                .fold(
+                    onSuccess = {
+                        Log.d(TAG, "File deleted successfully")
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to true
+                        ))
+                    },
+                    onFailure = { error ->
+                        val errorCode = when (error) {
+                            is SecurityException -> "PERMISSION_DENIED"
+                            is IllegalArgumentException -> "FILE_NOT_FOUND"
+                            else -> "IO_ERROR"
+                        }
+                        Log.e(TAG, "Delete failed: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to errorCode
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in deleteFile", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Get file size in bytes
+     */
+    private fun getFileSize(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val uriString = call.argument<String>("uri")
+                ?: return result.error("INVALID_URI", "URI is required", null)
+            
+            val uri = Uri.parse(uriString)
+            
+            safeFileHelper.getFileSize(uri)
+                .fold(
+                    onSuccess = { size ->
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to size
+                        ))
+                    },
+                    onFailure = { error ->
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to "FILE_NOT_FOUND"
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in getFileSize", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Get available storage in bytes
+     */
+    private fun getAvailableStorage(result: MethodChannel.Result) {
+        try {
+            safeFileHelper.getAvailableStorage()
+                .fold(
+                    onSuccess = { bytes ->
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to bytes
+                        ))
+                    },
+                    onFailure = { error ->
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to "IO_ERROR"
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in getAvailableStorage", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Check if file exists
+     */
+    private fun exists(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val uriString = call.argument<String>("uri")
+                ?: return result.error("INVALID_URI", "URI is required", null)
+            
+            val uri = Uri.parse(uriString)
+            
+            safeFileHelper.exists(uri)
+                .fold(
+                    onSuccess = { fileExists ->
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to fileExists
+                        ))
+                    },
+                    onFailure = { error ->
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to "IO_ERROR"
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in exists", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
         }
     }
 }
