@@ -16,6 +16,7 @@ class PlatformChannelHandler(private val activity: Activity) : MethodChannel.Met
     
     private val safHelper = SafHelper(activity)
     private val safeFileHelper = SafeFileHelper(activity)
+    private val trashHelper = TrashHelper(activity)
     private var pendingResult: MethodChannel.Result? = null
     
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -32,6 +33,11 @@ class PlatformChannelHandler(private val activity: Activity) : MethodChannel.Met
             "getFileSize" -> getFileSize(call, result)
             "getAvailableStorage" -> getAvailableStorage(result)
             "exists" -> exists(call, result)
+            "createTrashFolder" -> createTrashFolder(call, result)
+            "getTrashFolderUri" -> getTrashFolderUri(call, result)
+            "moveToTrash" -> moveToTrash(call, result)
+            "restoreFromTrash" -> restoreFromTrash(call, result)
+            "permanentlyDelete" -> permanentlyDelete(call, result)
             else -> result.notImplemented()
         }
     }
@@ -424,6 +430,218 @@ class PlatformChannelHandler(private val activity: Activity) : MethodChannel.Met
                 )
         } catch (e: Exception) {
             Log.e(TAG, "Error in exists", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Create the .trash folder in the given base URI
+     */
+    private fun createTrashFolder(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val baseUriString = call.argument<String>("baseUri")
+                ?: return result.error("INVALID_URI", "Base URI is required", null)
+            
+            val baseUri = Uri.parse(baseUriString)
+            
+            trashHelper.createTrashFolder(baseUri)
+                .fold(
+                    onSuccess = { trashUri ->
+                        Log.d(TAG, "Created trash folder: $trashUri")
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to trashUri.toString()
+                        ))
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Failed to create trash folder: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to "IO_ERROR"
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in createTrashFolder", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Get the .trash folder URI if it exists
+     */
+    private fun getTrashFolderUri(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val baseUriString = call.argument<String>("baseUri")
+                ?: return result.error("INVALID_URI", "Base URI is required", null)
+            
+            val baseUri = Uri.parse(baseUriString)
+            
+            trashHelper.getTrashFolderUri(baseUri)
+                .fold(
+                    onSuccess = { trashUri ->
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to (trashUri?.toString() ?: "")
+                        ))
+                    },
+                    onFailure = { error ->
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to "IO_ERROR"
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in getTrashFolderUri", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Move a file to the trash folder
+     */
+    private fun moveToTrash(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val sourceUriString = call.argument<String>("sourceUri")
+                ?: return result.error("INVALID_URI", "Source URI is required", null)
+            val trashFolderUriString = call.argument<String>("trashFolderUri")
+                ?: return result.error("INVALID_URI", "Trash folder URI is required", null)
+            val fileName = call.argument<String>("fileName")
+                ?: return result.error("INVALID_FILE_NAME", "File name is required", null)
+            
+            val sourceUri = Uri.parse(sourceUriString)
+            val trashFolderUri = Uri.parse(trashFolderUriString)
+            
+            trashHelper.moveToTrash(sourceUri, trashFolderUri, fileName)
+                .fold(
+                    onSuccess = { trashUri ->
+                        Log.d(TAG, "Moved to trash: $trashUri")
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to trashUri
+                        ))
+                    },
+                    onFailure = { error ->
+                        val errorCode = when (error) {
+                            is SecurityException -> "PERMISSION_DENIED"
+                            is IllegalArgumentException -> "FILE_NOT_FOUND"
+                            else -> "IO_ERROR"
+                        }
+                        Log.e(TAG, "Move to trash failed: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to errorCode
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in moveToTrash", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Restore a file from trash to original location
+     */
+    private fun restoreFromTrash(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val trashUriString = call.argument<String>("trashUri")
+                ?: return result.error("INVALID_URI", "Trash URI is required", null)
+            val destUriString = call.argument<String>("destUri")
+                ?: return result.error("INVALID_URI", "Destination URI is required", null)
+            
+            val trashUri = Uri.parse(trashUriString)
+            val destUri = Uri.parse(destUriString)
+            
+            trashHelper.restoreFromTrash(trashUri, destUri)
+                .fold(
+                    onSuccess = {
+                        Log.d(TAG, "Restored from trash: $destUri")
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to true
+                        ))
+                    },
+                    onFailure = { error ->
+                        val errorCode = when (error) {
+                            is SecurityException -> "PERMISSION_DENIED"
+                            is IllegalArgumentException -> "FILE_NOT_FOUND"
+                            is IllegalStateException -> "DESTINATION_EXISTS"
+                            else -> "IO_ERROR"
+                        }
+                        Log.e(TAG, "Restore failed: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to errorCode
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in restoreFromTrash", e)
+            result.success(mapOf(
+                "success" to false,
+                "error" to e.message ?: "Unknown error",
+                "errorCode" to "IO_ERROR"
+            ))
+        }
+    }
+    
+    /**
+     * Permanently delete a file from trash
+     */
+    private fun permanentlyDelete(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            val trashUriString = call.argument<String>("trashUri")
+                ?: return result.error("INVALID_URI", "Trash URI is required", null)
+            
+            val trashUri = Uri.parse(trashUriString)
+            
+            trashHelper.permanentlyDelete(trashUri)
+                .fold(
+                    onSuccess = {
+                        Log.d(TAG, "Permanently deleted from trash: $trashUri")
+                        result.success(mapOf(
+                            "success" to true,
+                            "data" to true
+                        ))
+                    },
+                    onFailure = { error ->
+                        val errorCode = when (error) {
+                            is SecurityException -> "PERMISSION_DENIED"
+                            is IllegalArgumentException -> "FILE_NOT_FOUND"
+                            else -> "IO_ERROR"
+                        }
+                        Log.e(TAG, "Permanent delete failed: ${error.message}")
+                        result.success(mapOf(
+                            "success" to false,
+                            "error" to (error.message ?: "Unknown error"),
+                            "errorCode" to errorCode
+                        ))
+                    }
+                )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in permanentlyDelete", e)
             result.success(mapOf(
                 "success" to false,
                 "error" to e.message ?: "Unknown error",

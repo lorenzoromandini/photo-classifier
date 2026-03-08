@@ -181,4 +181,33 @@ class FileOperationService {
       );
     }
   }
+
+  /// Invoke a platform method directly (for custom operations)
+  Future<FileResult<Map>> invokePlatformMethod(
+    String method,
+    Map<String, dynamic> arguments,
+  ) async {
+    try {
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+        method,
+        arguments,
+      );
+
+      if (result == null) {
+        return FileResult.failure('Null result from platform channel');
+      }
+
+      return FileResult.fromMap<Map>(result, defaultCode: FileErrorCodes.ioError);
+    } on PlatformException catch (e) {
+      return FileResult.failure(
+        e.message ?? 'Platform error invoking $method',
+        code: e.code,
+      );
+    } catch (e) {
+      return FileResult.failure(
+        e.toString(),
+        code: FileErrorCodes.ioError,
+      );
+    }
+  }
 }
