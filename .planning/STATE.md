@@ -1,8 +1,8 @@
 # STATE: Android Photo Auto-Organizer
 
 **Project:** Photo-Classificator  
-**Current Phase:** Phase 1 — Foundation & Data Safety  
-**Last Updated:** 2026-03-06  
+**Current Phase:** Phase 2 — Detection & Classification Pipeline (Planned)  
+**Last Updated:** 2026-03-08  
 
 ---
 
@@ -20,20 +20,29 @@
 
 | Phase | Name | Status | Requirements Complete | Success Criteria Met |
 |-------|------|--------|----------------------|---------------------|
-| 1 | Foundation & Data Safety | **IN PROGRESS** | 1/11 | 0/4 |
-| 2 | Detection & Classification Pipeline | Blocked | 0/14 | 0/5 |
+| 1 | Foundation & Data Safety | ✅ **PLANNED** | 7/7 | 0/4 |
+| 2 | Detection & Classification Pipeline | **PLANNED** | 0/14 | 0/5 |
 | 3 | Notifications & Polish | Blocked | 0/7 | 0/4 |
 | 4 | Release Preparation | Blocked | 0/3 | 0/3 |
 
 ### Current Plan Progress
 
-**01-01:** ✅ Platform Channels & Database (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-01-PLAN.md)  
-**01-02:** ✅ SAF Integration via Platform Channels (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-02-PLAN.md)  
-**01-03:** ✅ Safe File Operations (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-03-PLAN.md)  
-**01-04:** ✅ Onboarding Flow (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md)  
-**01-05:** ✅ Folder Learning System (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md)  
-**01-06:** ✅ Trash System (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-06-PLAN.md)  
-**01-07:** ⏳ Main Screen & Settings (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md)  
+**01-01:** ✅ Platform Channels & Database (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-01-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-01-SUMMARY.md)  
+**01-02:** ✅ SAF Integration via Platform Channels (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-02-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-02-SUMMARY.md)  
+**01-03:** ✅ Safe File Operations (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-03-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-03-SUMMARY.md)  
+**01-04:** ✅ Onboarding Flow (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-04-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-04-SUMMARY.md)  
+**01-05:** ✅ Folder Learning System (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-05-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-05-SUMMARY.md)  
+**01-06:** ✅ Trash System (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-06-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-06-SUMMARY.md)  
+**01-07:** ✅ Main Screen & Settings (Flutter rewrite) - [PLAN](phases/01-foundation-data-safety/01-07-PLAN.md) | [SUMMARY](phases/01-foundation-data-safety/01-07-SUMMARY.md)
+
+### Phase 2 Plans (Ready for Execution)
+
+**02-01:** Foreground Service & MediaStore Observer - [PLAN](phases/02-detection-classification/02-01-PLAN.md)  
+**02-02:** Photo Detection Queue - [PLAN](phases/02-detection-classification/02-02-PLAN.md)  
+**02-03:** Image Preprocessing & ML Classification - [PLAN](phases/02-detection-classification/02-03-PLAN.md)  
+**02-04:** Classification Engine - [PLAN](phases/02-detection-classification/02-04-PLAN.md)  
+**02-05:** Auto-Sort Execution - [PLAN](phases/02-detection-classification/02-05-PLAN.md)  
+**02-06:** Monitoring UI & Queue Review - [PLAN](phases/02-detection-classification/02-06-PLAN.md)  
 
 *Note: Previous Kotlin implementation summaries archived. Plans re-executing for Flutter.*
 
@@ -41,18 +50,38 @@
 
 ## Current Focus
 
-**Active Phase:** Phase 1 — Foundation & Data Safety  
-**Goal:** Users can configure categories and grant permissions; app safely handles files with zero data loss.
+**Active Phase:** Phase 2 — Detection & Classification Pipeline  
+**Goal:** App automatically detects new photos, classifies them using on-device ML, and moves them to appropriate folders without user interaction for high-confidence matches.
 
 ### Current Priorities
 
-1. ~~Database Schema~~: Room entities for PhotoRecord, Category, and TransactionLog ✅ **DONE**  
-2. ~~SAF DataSource~~: Storage Access Framework with folder discovery ✅ **DONE**  
-3. ~~Safe File Operations~~: Copy-verify-delete pattern with transaction logging ✅ **DONE**  
-4. ~~Onboarding Flow~~: Single-screen SAF onboarding with folder discovery ✅ **DONE**  
-5. ~~Folder Learning System~~: ML Kit label extraction and aggregation ✅ **DONE**  
-6. ~~Trash System~~: 7-day retention with scheduled cleanup ✅ **DONE**  
-7. ~~Main Screen & Settings~~: Folder list, confidence threshold, recovery - ✅ **DONE**
+1. **Foreground Service**: Set up flutter_foreground_task for persistent monitoring
+2. **MediaStore Observer**: Implement ContentObserver via platform channels  
+3. **Photo Queue**: Create detection queue with pending photo tracking
+4. **Image Preprocessing**: Downscale to 224x224 before ML classification
+5. **ML Classification**: Run google_mlkit_image_labeling in background
+6. **Classification Engine**: Map labels to categories with confidence thresholds
+7. **Auto-Sort**: Execute safe file moves for high-confidence matches
+8. **Monitoring UI**: Build screen for service status and queue review
+
+### Phase 2 Requirements
+
+| Requirement | Description | Status |
+|-------------|-------------|--------|
+| MON-01 | Foreground service maintains persistent notification | Planned |
+| MON-02 | MediaStore ContentObserver watches for new photos | Planned |
+| MON-03 | Service restarts automatically after device reboot | Planned |
+| MON-04 | Service handles Doze mode gracefully | Planned |
+| MON-05 | WorkManager schedules ML jobs with battery constraints | Planned |
+| ML-01 | ML Kit Image Labeling analyzes photos | Planned |
+| ML-02 | Classification maps ML labels to categories | Planned |
+| ML-03 | Confidence threshold (0.7) determines auto-sort | Planned |
+| ML-04 | Low-confidence photos queue for user decision | Planned |
+| ML-05 | Photos downscaled to 224x224 for performance | Planned |
+| CAT-03 | Categories map to ML Kit labels with thresholds | Planned |
+| CAT-04 | Hierarchical categories supported | Planned |
+| IMG-01-05 | JPEG, PNG, WebP, HEIC support | Planned |
+| ERR-02 | Corrupt images skipped gracefully | Planned |
 
 ### Blockers
 
