@@ -1,8 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../domain/models/folder_model.dart';
-import '../domain/models/photo_model.dart';
-import '../domain/models/transaction_model.dart';
+import '../../domain/models/folder_model.dart';
+import '../../domain/models/photo_model.dart';
+import '../../domain/models/transaction_model.dart';
 
 class DatabaseService {
   static Database? _database;
