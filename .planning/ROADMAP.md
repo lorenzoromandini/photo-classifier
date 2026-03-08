@@ -136,6 +136,18 @@ This roadmap delivers the Android Photo Auto-Organizer through **4 phases**, ens
 ### Phase 2 Dependencies
 - Phase 1 complete (requires: categories, permissions, safe file operations, transaction logging)
 
+### Plans
+**6 plans in 3 execution waves:**
+
+| Plan | Objective | Wave | Files | Autonomous |
+|------|-----------|------|-------|------------|
+| [ ] 02-01 | Set up persistent foreground service with flutter_foreground_task. Implement MediaStore ContentObserver platform channel for automatic photo detection. Handle Doze mode and boot auto-restart. | 1 | 6 files | yes |
+| [ ] 02-02 | Create photo detection queue management. Implement PhotoDetection model, PhotoQueueRepository for deduplication, and PhotoDetectionService coordinator. | 1 | 4 files | yes |
+| [ ] 02-03 | Implement ML classification pipeline with image preprocessing. Add flutter_image_compress for 224x224 downscaling. Support JPEG, PNG, WebP, HEIC formats with corrupt image handling. | 2 | 4 files | yes |
+| [ ] 02-04 | Build classification engine mapping ML labels to categories. Implement confidence thresholds (0.7 auto-sort), hierarchical categories, and label mappings. | 2 | 4 files | yes |
+| [ ] 02-05 | Implement WorkManager-based background classification and auto-sort execution. Execute file moves via SafeFileService with transaction logging. | 3 | 4 files | yes |
+| [ ] 02-06 | Build UI for monitoring service control and photo queue review. Add screens for service status, queue management, and classification results. | 3 | 5 files | no |
+
 ### Deliverables
 - Foreground service with ContentObserver
 - WorkManager workers for ML inference
