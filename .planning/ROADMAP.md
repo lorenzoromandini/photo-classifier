@@ -63,18 +63,28 @@ This roadmap delivers the Android Photo Auto-Organizer through **4 phases**, ens
 ### Phase 1 Dependencies
 - None (foundational phase)
 
+### Tech Stack
+**Flutter + Platform Channels Architecture:**
+- **Flutter**: Dart code for UI, state management (Riverpod), business logic
+- **Platform Channels**: Flutter-to-Android communication for SAF operations
+- **Native Android**: Kotlin for SAF DocumentFile, WorkManager, Foreground Service
+- **Database**: sqflite (SQLite) for Flutter
+- **Preferences**: shared_preferences (DataStore equivalent)
+- **ML**: google_mlkit_image_labeling (Flutter package)
+- **Background**: workmanager (Flutter package wrapping WorkManager)
+
 ### Plans
 **7 plans in 3 execution waves:**
 
 | Plan | Objective | Wave | Files |
 |------|-----------|------|-------|
-| [ ] 01-01 | Create Room database with entities for categories, folders, photos, and transaction log. Implement Proto DataStore for user preferences. | 1 | 16 files |
-| [ ] 01-02 | Implement SAF integration for folder discovery and URI permission persistence. Build FolderRepository with offline-first pattern. | 1 | 4 files |
-| [ ] 01-03 | Create SafeFileOperations with copy-then-verify-then-delete pattern. Implement transaction logging and crash recovery. | 1 | 4 files |
-| [ ] 01-04 | Build single-screen onboarding with SAF permission request and folder discovery. | 2 | 6 files |
-| [ ] 01-05 | Implement folder learning with ML Kit Image Labeling (50 photos per folder). Background WorkManager worker. | 2 | 5 files |
-| [ ] 01-06 | Create trash system with 7-day retention and daily cleanup worker. | 2 | 3 files |
-| [ ] 01-07 | Build main screen and settings. Implement startup crash recovery and confidence threshold selection. | 3 | 7 files |
+| [ ] 01-01 | Create platform channels for SAF operations. Implement sqflite database with entities and SharedPreferences for settings. | 1 | 10 files |
+| [ ] 01-02 | Implement SAF integration via platform channels for folder discovery. Build FolderRepository with offline-first pattern using Riverpod. | 1 | 6 files |
+| [ ] 01-03 | Create SafeFileService with copy-then-verify-then-delete pattern via platform channels. Implement transaction logging and crash recovery. | 1 | 8 files |
+| [ ] 01-04 | Build single-screen onboarding with SAF permission picker using file_picker. Riverpod state management. | 2 | 6 files |
+| [ ] 01-05 | Implement folder learning with ML Kit Image Labeling (50 photos per folder). Background WorkManager via workmanager package. | 2 | 7 files |
+| [ ] 01-06 | Create trash system with 7-day retention and daily cleanup worker via platform channels. | 2 | 6 files |
+| [ ] 01-07 | Build main screen and settings with Riverpod. Implement startup crash recovery and confidence threshold selection. | 3 | 8 files |
 
 ### Deliverables
 - Category management UI
