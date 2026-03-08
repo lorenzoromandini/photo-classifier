@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../../domain/models/folder_model.dart';
 import '../../domain/models/photo_model.dart';
 import '../../domain/models/transaction_model.dart';
+import '../../domain/models/trash_item.dart';
 
 class DatabaseService {
   static Database? _database;
@@ -83,7 +84,8 @@ class DatabaseService {
     // Trash table
     await db.execute('''
       CREATE TABLE trash (
-        original_uri TEXT PRIMARY KEY,
+        id TEXT PRIMARY KEY,
+        original_uri TEXT NOT NULL,
         trash_uri TEXT NOT NULL,
         file_name TEXT NOT NULL,
         file_size INTEGER NOT NULL,
@@ -92,6 +94,11 @@ class DatabaseService {
         restored INTEGER DEFAULT 0
       )
     ''');
+    
+    // Index on expires_at for efficient cleanup queries
+    await db.execute('CREATE INDEX idx_trash_expires_at ON trash(expires_at)');
+    // Index on restored for filtering active items
+    await db.execute('CREATE INDEX idx_trash_restored ON trash(restored)');
   }
   
   // Folder operations
@@ -147,24 +154,87 @@ class DatabaseService {
   }
   
   // Trash operations
-  Future<void> insertTrashItem(Map<String, dynamic> item) async {
+  Future<void> insertTrashItem(TrashItem item) async {
     final db = await database;
-    await db.insert('trash', item);
+    await db.insert('trash', item.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
   
-  Future<List<Map<String, dynamic>>> getExpiredTrashItems() async {
+  Future<List<TrashItem>> getAllTrashItems() async {
+    final db = await database;
+    final maps = await db.query('trash');
+    return maps.map((map) => TrashItem.fromMap(map)).toList();
+  }
+  
+  Future<List<TrashItem>> getActiveTrashItems() async {
+    final db = await database;
+    final maps = await db.query(
+      'trash',
+      where: 'restored = 0',
+    );
+    return maps.map((map) => TrashItem.fromMap(map)).toList();
+  }
+  
+  Future<List<TrashItem>> getExpiredTrashItems() async {
     final db = await database;
     final now = DateTime.now().millisecondsSinceEpoch;
-    return await db.query(
+    final maps = await db.query(
       'trash',
       where: 'expires_at < ? AND restored = 0',
       whereArgs: [now],
     );
+    return maps.map((map) => TrashItem.fromMap(map)).toList();
   }
   
-  Future<void> deleteTrashItem(String uri) async {
+  Future<TrashItem?> getTrashItem(String id) async {
     final db = await database;
-    await db.delete('trash', where: 'original_uri = ?', whereArgs: [uri]);
+    final maps = await db.query(
+      'trash',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isEmpty) return null;
+    return TrashItem.fromMap(maps.first);
+  }
+  
+  Future<TrashItem?> getTrashItemByOriginalUri(String uri) async {
+    final db = await database;
+    final maps = await db.query(
+      'trash',
+      where: 'original_uri = ?',
+      whereArgs: [uri],
+    );
+    if (maps.isEmpty) return null;
+    return TrashItem.fromMap(maps.first);
+  }
+  
+  Future<void> markRestored(String id) async {
+    final db = await database;
+    await db.update(
+      'trash',
+      {'restored': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+  
+  Future<void> deleteTrashItem(String id) async {
+    final db = await database;
+    await db.delete('trash', where: 'id = ?', whereArgs: [id]);
+  }
+  
+  Future<void> clearAllTrash() async {
+    final db = await database;
+    await db.delete('trash');
+  }
+  
+  Future<int> getTrashSize() async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT SUM(file_size) as total FROM trash WHERE restored = 0',
+    );
+    if (result.isEmpty || result.first['total'] == null) return 0;
+    return result.first['total'] as int;
   }
   
   // Photo operations
